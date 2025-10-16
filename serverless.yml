@@ -1,0 +1,85 @@
+service: pdf-generation-serverless
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${env:AWS_REGION, 'us-east-1'}
+  stage: ${env:STAGE, 'local'}
+  timeout: 300
+  memorySize: 1024
+  
+  environment:
+    S3_BUCKET: ${env:S3_BUCKET, 'vertiv'}
+    AWS_REGION: ${env:AWS_REGION, 'us-east-1'}
+    AWS_ACCESS_KEY_ID: ${env:AWS_ACCESS_KEY_ID, 'OdJTvIf88W6W4HNm5wn5'}
+    AWS_SECRET_ACCESS_KEY: ${env:AWS_SECRET_ACCESS_KEY, 'YLYwa9qw3Lnzrp9bmQF4IOXhztdHdMo2ZbqtE0W4'}
+    S3_ENDPOINT_URL: ${env:S3_ENDPOINT_URL, 'http://localhost:9000'}
+    S3_FORCE_PATH_STYLE: ${env:S3_FORCE_PATH_STYLE, 'true'}
+    FSR_REATTEMPT_TIMEOUT: ${env:FSR_REATTEMPT_TIMEOUT, '5000'}
+    PRESIGNED_URL_EXPIRE: ${env:PRESIGNED_URL_EXPIRE, '3600'}
+    ENABLE_VERTIV_LOGS: ${env:ENABLE_VERTIV_LOGS, 'false'}
+  
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+        - s3:GetObjectVersion
+      Resource: "arn:aws:s3:::${env:S3_BUCKET, 'vertiv'}/*"
+    - Effect: Allow
+      Action:
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+
+functions:
+  generatePDF:
+    handler: src/handlers/generatePDF.handler
+    description: Generate PDF reports for different product groups
+    events:
+      - http:
+          path: notification.report
+          method: post
+          cors: true
+      - http:
+          path: notification.report
+          method: options
+          cors: true
+    reservedConcurrency: 10
+
+  getPDF:
+    handler: src/handlers/getPDF.handler
+    description: Retrieve PDF reports from S3
+    events:
+      - http:
+          path: report.getpdf
+          method: get
+          cors: true
+      - http:
+          path: report.getpdf
+          method: options
+          cors: true
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3000
+    host: 0.0.0.0
+    noPrependStageInUrl: true
+
+package:
+  patterns:
+    - '!node_modules/.cache/**'
+    - '!tests/**'
+    - '!docs/**'
+    - '!scripts/**'
+    - '!.git/**'
+    - '!.env*'
+    - '!README.md'
+    - '!.gitignore'
