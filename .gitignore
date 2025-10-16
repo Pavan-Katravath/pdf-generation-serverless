@@ -1,16 +1,10 @@
 node_modules
 .env
 #files
-tests
 
 #test covergae
-coverage
-cypress
 
 
 *.sh
-
-cypress.config.js
-jest.config.js
 
 .cursor
